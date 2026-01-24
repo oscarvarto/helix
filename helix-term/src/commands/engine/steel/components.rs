@@ -9,7 +9,10 @@ use helix_view::{
     Editor,
 };
 use steel::{
-    rvals::{as_underlying_type, AsRefSteelVal, Custom, FromSteelVal, IntoSteelVal, SteelString},
+    rvals::{
+        as_underlying_type, AsRefMutSteelVal, AsRefSteelVal, Custom, FromSteelVal, IntoSteelVal,
+        SteelString,
+    },
     steel_vm::{builtin::BuiltInModule, engine::Engine, register_fn::RegisterFn},
     RootedSteelVal, SteelVal,
 };
@@ -21,7 +24,13 @@ use tui::{
 };
 
 use crate::{
-    commands::{engine::steel::BoxDynComponent, Context},
+    commands::{
+        engine::steel::{
+            text_buffer::{make_editor, SteelEditor},
+            BoxDynComponent,
+        },
+        Context,
+    },
     compositor::{self, Component},
     ui::{self, overlay::overlaid},
 };
@@ -553,6 +562,68 @@ area : Rect?
             None
         }
     );
+
+    module.register_fn(
+        "native-component-cursor",
+        |ctx: &mut Context,
+         area: Rect,
+         mut component: SteelVal|
+         -> (
+            Option<helix_core::Position>,
+            helix_view::graphics::CursorKind,
+        ) {
+            if let Ok(mut this) = WrappedDynComponent::as_mut_ref(&mut component) {
+                if let Some(inner) = &mut this.inner {
+                    return inner.cursor(area, &ctx.editor);
+                }
+            }
+
+            (None, CursorKind::Bar)
+        },
+    );
+
+    builtin_components_module.push_str(&format!(
+        r#"
+(provide native-component-cursor)
+;;@doc
+;; Render a native component
+(define (native-component-cursor component area)
+    (helix.components.native-component-cursor *helix.cx* area component))
+                    "#,
+    ));
+
+    register!("make-editor", make_editor);
+    register!("make-editor-component", SteelEditor::new);
+    register!("editor-text", SteelEditor::get_text);
+
+    module.register_fn(
+        "native-component-handle-event",
+        |ctx: &mut Context, event: SteelVal, mut component: SteelVal| {
+            if let Ok(mut inner) = WrappedDynComponent::as_mut_ref(&mut component) {
+                if let Ok(event) = Event::as_ref(&event) {
+                    let mut ctx = compositor::Context {
+                        editor: ctx.editor,
+                        scroll: None,
+                        jobs: ctx.jobs,
+                    };
+
+                    if let Some(inner) = &mut inner.inner {
+                        inner.handle_event(&event, &mut ctx);
+                    }
+                }
+            }
+        },
+    );
+
+    builtin_components_module.push_str(&format!(
+        r#"
+(provide native-component-handle-event)
+;;@doc
+;; Call the event handler for a native component
+(define (native-component-handle-event component event)
+    (helix.components.native-component-handle-event *helix.cx* event component))
+                    "#,
+    ));
 
     builtin_components_module.push_str(&format!(
         r#"

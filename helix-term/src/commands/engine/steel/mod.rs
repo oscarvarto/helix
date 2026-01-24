@@ -1,4 +1,5 @@
 mod components;
+mod text_buffer;
 
 use arc_swap::{ArcSwap, ArcSwapAny};
 use helix_core::{

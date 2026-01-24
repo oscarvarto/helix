@@ -1264,6 +1264,9 @@ pub struct Editor {
     pub editor_clipping: ClippingConfiguration,
 }
 
+unsafe impl Send for Editor {}
+unsafe impl Sync for Editor {}
+
 #[derive(Default)]
 pub struct ClippingConfiguration {
     pub top: Option<u16>,
