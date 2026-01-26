@@ -317,7 +317,7 @@ impl Application {
         let surface = self.terminal.current_buffer_mut();
 
         self.compositor.render(area, surface, &mut cx);
-        let (pos, kind) = self.compositor.cursor(area, &self.editor);
+        let (pos, kind) = self.compositor.cursor(area, &mut self.editor);
         // reset cursor cache
         self.editor.cursor_cache.reset();
 

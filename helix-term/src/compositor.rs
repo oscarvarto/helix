@@ -54,7 +54,7 @@ pub trait Component: Any + AnyComponent {
     fn render(&mut self, area: Rect, frame: &mut Surface, ctx: &mut Context);
 
     /// Get cursor position and cursor kind.
-    fn cursor(&self, _area: Rect, _ctx: &Editor) -> (Option<Position>, CursorKind) {
+    fn cursor(&mut self, _area: Rect, _ctx: &mut Editor) -> (Option<Position>, CursorKind) {
         (None, CursorKind::Hidden)
     }
 
@@ -207,8 +207,8 @@ impl Compositor {
         }
     }
 
-    pub fn cursor(&self, area: Rect, editor: &Editor) -> (Option<Position>, CursorKind) {
-        for layer in self.layers.iter().rev() {
+    pub fn cursor(&mut self, area: Rect, editor: &mut Editor) -> (Option<Position>, CursorKind) {
+        for layer in self.layers.iter_mut().rev() {
             if let (Some(pos), kind) = layer.cursor(area, editor) {
                 return (Some(pos), kind);
             }

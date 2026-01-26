@@ -1151,7 +1151,7 @@ impl<I: 'static + Send + Sync, D: 'static + Send + Sync> Component for Picker<I,
         EventResult::Consumed(None)
     }
 
-    fn cursor(&self, area: Rect, editor: &Editor) -> (Option<Position>, CursorKind) {
+    fn cursor(&mut self, area: Rect, editor: &mut Editor) -> (Option<Position>, CursorKind) {
         let block = Block::bordered();
         // calculate the inner area inside the box
         let inner = block.inner(area);

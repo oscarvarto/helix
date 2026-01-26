@@ -68,13 +68,14 @@ impl Component for SteelEditorComponent {
     ) {
         if let Ok(mut component) = SteelEditor::as_mut_ref(&mut self.component) {
             let mut editor = component.editor.take().unwrap();
+            let area = self.area; // .clip_bottom(1);
+                                  // editor.resize(area);
+
             let mut ctx = crate::compositor::Context {
                 editor: &mut editor,
                 scroll: None,
                 jobs: &mut Jobs::new(),
             };
-
-            let area = self.area;
 
             component.editor_view.render(area, frame, &mut ctx);
             component.editor = Some(editor);
@@ -104,11 +105,14 @@ impl Component for SteelEditorComponent {
         }
     }
 
-    fn cursor(&self, area: Rect, _: &Editor) -> (Option<Position>, CursorKind) {
-        if let Ok(component) = SteelEditor::as_ref(&self.component) {
-            component
-                .editor_view
-                .cursor(area, component.editor.as_ref().unwrap())
+    fn cursor(&mut self, area: Rect, _: &mut Editor) -> (Option<Position>, CursorKind) {
+        if let Ok(mut component) = SteelEditor::as_mut_ref(&self.component) {
+            let mut editor = component.editor.take().unwrap();
+
+            let res = component.editor_view.cursor(area, &mut editor);
+            component.editor = Some(editor);
+
+            res
         } else {
             (None, CursorKind::Block)
         }

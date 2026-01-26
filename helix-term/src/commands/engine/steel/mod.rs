@@ -4583,9 +4583,9 @@ impl Component for BoxDynComponent {
     }
 
     fn cursor(
-        &self,
+        &mut self,
         _area: helix_view::graphics::Rect,
-        _ctx: &Editor,
+        _ctx: &mut Editor,
     ) -> (
         Option<helix_core::Position>,
         helix_view::graphics::CursorKind,

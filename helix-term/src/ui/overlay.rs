@@ -65,7 +65,7 @@ impl<T: Component + 'static> Component for Overlay<T> {
         self.content.handle_event(event, ctx)
     }
 
-    fn cursor(&self, area: Rect, ctx: &Editor) -> (Option<Position>, CursorKind) {
+    fn cursor(&mut self, area: Rect, ctx: &mut Editor) -> (Option<Position>, CursorKind) {
         let dimensions = (self.calc_child_size)(area);
         self.content.cursor(dimensions, ctx)
     }

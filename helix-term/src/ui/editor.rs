@@ -1644,7 +1644,7 @@ impl Component for EditorView {
         }
     }
 
-    fn cursor(&self, _area: Rect, editor: &Editor) -> (Option<Position>, CursorKind) {
+    fn cursor(&mut self, _area: Rect, editor: &mut Editor) -> (Option<Position>, CursorKind) {
         match editor.cursor() {
             // all block cursors are drawn manually
             (pos, CursorKind::Block) => {

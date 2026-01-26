@@ -32,6 +32,7 @@ use crate::{
         Context,
     },
     compositor::{self, Component},
+    job::Jobs,
     ui::{self, overlay::overlaid},
 };
 
@@ -574,7 +575,7 @@ area : Rect?
         ) {
             if let Ok(mut this) = WrappedDynComponent::as_mut_ref(&mut component) {
                 if let Some(inner) = &mut this.inner {
-                    return inner.cursor(area, &ctx.editor);
+                    return inner.cursor(area, &mut ctx.editor);
                 }
             }
 
@@ -2200,9 +2201,9 @@ impl Component for SteelDynamicComponent {
 
     // TODO: Implement immutable references. Right now I'm only supporting mutable references.
     fn cursor(
-        &self,
+        &mut self,
         area: helix_view::graphics::Rect,
-        _ctx: &Editor,
+        ctx: &mut Editor,
     ) -> (
         Option<helix_core::Position>,
         helix_view::graphics::CursorKind,
@@ -2221,7 +2222,25 @@ impl Component for SteelDynamicComponent {
                 )
             };
 
-            let cursor_call_result = enter_engine(thunk);
+            let mut ctx = Context {
+                register: None,
+                count: None,
+                editor: ctx,
+                callback: Vec::new(),
+                on_next_key_callback: None,
+                jobs: &mut Jobs::new(),
+            };
+
+            let cursor_call_result = enter_engine(|guard| {
+                guard
+                    .with_mut_reference::<Context, Context>(&mut ctx)
+                    .consume(|engine, args| {
+                        let mut arg_iter = args.into_iter();
+                        let context = arg_iter.next().unwrap();
+                        engine.update_value("*helix.cx*", context);
+                        (thunk)(engine)
+                    })
+            });
 
             match cursor_call_result {
                 Ok(c) => match c {
@@ -2243,6 +2262,16 @@ impl Component for SteelDynamicComponent {
                                         "bar" => CursorKind::Bar,
                                         "underline" => CursorKind::Underline,
                                         _ => CursorKind::Block,
+                                    }
+                                }
+
+                                Some(SteelVal::Custom(v)) => {
+                                    if let Some(v) =
+                                        as_underlying_type::<CursorKind>(v.read().as_ref())
+                                    {
+                                        *v
+                                    } else {
+                                        CursorKind::Block
                                     }
                                 }
 
